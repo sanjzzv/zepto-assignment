@@ -2,6 +2,11 @@ import React from "react";
 import { useState } from "react";
 
 export default function App() {
+  const [inputValue, setInputValue] = useState("");
+  const [chips, setChips] = useState([]);
+  const [showList, setShowList] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(null);
+
   const users = [
     {
       "id": 1,
@@ -56,134 +61,95 @@ export default function App() {
       "name": "Liam Taylor",
       "image": "url_to_image_9.jpg",
       "email": "liam.taylor@example.com"
-    },
-    {
-      "id": 10,
-      "name": "Emma Moore",
-      "image": "url_to_image_10.jpg",
-      "email": "emma.moore@example.com"
-    },
-    {
-      "id": 11,
-      "name": "Daniel Anderson",
-      "image": "url_to_image_11.jpg",
-      "email": "daniel.anderson@example.com"
-    },
-    {
-      "id": 12,
-      "name": "Ava Thomas",
-      "image": "url_to_image_12.jpg",
-      "email": "ava.thomas@example.com"
-    },
-    {
-      "id": 13,
-      "name": "Jackson Harris",
-      "image": "url_to_image_13.jpg",
-      "email": "jackson.harris@example.com"
-    },
-    {
-      "id": 14,
-      "name": "Mia Martinez",
-      "image": "url_to_image_14.jpg",
-      "email": "mia.martinez@example.com"
-    },
-    {
-      "id": 15,
-      "name": "Ethan Clark",
-      "image": "url_to_image_15.jpg",
-      "email": "ethan.clark@example.com"
-    },
-    {
-      "id": 16,
-      "name": "Avery Adams",
-      "image": "url_to_image_16.jpg",
-      "email": "avery.adams@example.com"
-    },
-    {
-      "id": 17,
-      "name": "Madison Baker",
-      "image": "url_to_image_17.jpg",
-      "email": "madison.baker@example.com"
-    },
-    {
-      "id": 18,
-      "name": "James Turner",
-      "image": "url_to_image_18.jpg",
-      "email": "james.turner@example.com"
-    },
-    {
-      "id": 19,
-      "name": "Scarlett Garcia",
-      "image": "url_to_image_19.jpg",
-      "email": "scarlett.garcia@example.com"
-    },
-    {
-      "id": 20,
-      "name": "Logan Foster",
-      "image": "url_to_image_20.jpg",
-      "email": "logan.foster@example.com"
     }
   ]
-  const [tagValue, setTagValue] = useState("");
-  const [tags, setTags] = useState([]);
-  const [showList, setShowList] = useState(false)
 
-  const addTags = (e) => {
-    if (e.key === "Enter" && tagValue) {
-      console.log(tagValue);
-      setTags([...tags, tagValue]);
-      setTagValue("");
+  const filteredItemList = users.filter((item)=>!chips.includes(item.name));
+
+  const handleInputChange = (e) => {
+    setInputValue(e.target.value);
+    setShowList(true);
+    setHighlightedIndex(null);
+  }
+
+  const handleInputKeyDown = (e) => {
+    if (e.key === "Backspace" && inputValue==='' && chips.length>0) {
+      //handle backspace to delete last chip
+      const lastChip=chips[chips.length-1];
+      const updatedChips=[chips.slice(0, -1)];
+      setChips(updatedChips);
+      setInputValue('');
+      filteredItemList.push(lastChip);
+    }
+
+    else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      //handle arrow navigation
+      e.preventDefault();
+      const direction = e.key === "ArrowUp" ? -1 : 1;
+      const newIndex = 
+        highlightedIndex === null
+        ? direction === 1
+          ? 0
+          : filteredItemList.length-1
+        : (highlightedIndex + direction + filteredItemList.length) % filteredItemList.length;
+      setHighlightedIndex(newIndex);
+    }
+
+    else if(e.key === "Enter" && highlightedIndex !== null){
+      //handle enter to select item from list
+      handleItemClick(filteredItemList[highlightedIndex].name);
     }
   };
 
-  const handleDelete = (index) => {
-    const updatedTags=[...tags.slice(0, index), ...tags.slice(index + 1)];
-    setTags(updatedTags);
+  const handleInputClick = () => {
+    setShowList(true);
+    setHighlightedIndex(null);
+  }
+
+  const handleChipDelete = (index) => {
+    const deletedChip=chips[index];
+    const updatedChips=[...chips.slice(0, index), ...chips.slice(index + 1)];
+    setChips(updatedChips);
+    setInputValue('');
+    filteredItemList.push(deletedChip);
   }
 
   const handleItemClick = (item) => {
-      const updatedTags=[...tags, item];
-      setTags(updatedTags);
-      setTagValue('');
+      const updatedChips=[...chips, item];
+      setChips(updatedChips);
+      setInputValue('');
       setShowList(false);
   }
 
-  const handleInputChange = (e) => {
-    setTagValue(e.target.value);
-    setShowList(true);
-  }
 
-  const handleClick = () => {
-    setShowList(true);
-  }
-
+ 
   return (
     <div className="main flex justify-center">
       <div className="content">
-        <div className="tagInput">
+        <div className="chipInput">
           <ul>
-            {tags.map((tag, index) => {
-              return <li key={index}>{tag}<span onClick={()=>handleDelete(index)}>X</span></li>;
+            {chips.map((chip, index) => {
+              return <li key={index}>{chip}<span onClick={()=>handleChipDelete(index)}>X</span></li>;
             })}
           </ul>
           <input
             type="text"
             placeholder="type something"
-            value={tagValue}
+            value={inputValue}
             onChange={handleInputChange}
-            onKeyDown={addTags}
-            onClick={handleClick}
+            onKeyDown={handleInputKeyDown}
+            onClick={handleInputClick}
           />
           {showList && 
           <div className="list">
-            {tagValue===''
-            ?users.map((item, index) => (
+            {inputValue===''
+            ?filteredItemList.map((item, index) => (
               <div key={index} onClick={() => handleItemClick(item.name)}>
                 {item.name}
               </div>))
             :
-            users
-              .filter((item) => item.name.toLowerCase().includes(tagValue.toLowerCase()))
+            filteredItemList
+              .filter((item) => item.name.toLowerCase().includes(inputValue.toLowerCase()))
               .map((filteredItem, index) => (
                 <div key={index} onClick={() => handleItemClick(filteredItem.name)}>
                   {filteredItem.name}
